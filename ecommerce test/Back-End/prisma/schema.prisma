@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  phone        String?
+  cpf          String?  @unique
+  passwordHash String?
+  googleId     String?
+  facebookId   String?
+  twoFASecret  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  addresses    Address[]
+  orders       Order[]
+  carts        Cart[]
+  consentLogs  ConsentLog[]
+}
+
+model Address {
+  id            String  @id @default(uuid())
+  user          User    @relation(fields: [userId], references: [id])
+  userId        String
+  label         String?
+  recipientName String
+  cep           String
+  street        String
+  number        String
+  complement    String?
+  district      String
+  city          String
+  state         String
+  country       String  @default("BR")
+  isDefault     Boolean @default(false)
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  restricted  Boolean  @default(false)
+  theme       Json?
+  products    Product[]
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  category      Category @relation(fields: [categoryId], references: [id])
+  categoryId    String
+  title         String
+  description   String
+  sku           String   @unique
+  brand         String?
+  model         String?
+  colorOptions  String[] @default([])
+  sizeOptions   String[] @default([])
+  images        String[] @default([])
+  price         Float
+  compareAtPrice Float?
+  stock         Int
+  attributes    Json?
+  isHot         Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Cart {
+  id        String    @id @default(uuid())
+  user      User?     @relation(fields: [userId], references: [id])
+  userId    String?
+  sessionId String?
+  items     CartItem[]
+  subtotal  Float     @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  cartId    String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  variant   Json?
+  qty       Int
+  unitPrice Float
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  user        User?       @relation(fields: [userId], references: [id])
+  userId      String?
+  address     Address     @relation(fields: [addressId], references: [id])
+  addressId   String
+  items       OrderItem[]
+  subtotal    Float
+  shipping    Float
+  discount    Float
+  total       Float
+  status      String      @default("created")
+  paymentMethod String
+  paymentId   String?
+  createdAt   DateTime    @default(now())
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  productId String
+  title     String
+  variant   Json?
+  qty       Int
+  unitPrice Float
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+}
+
+model ConsentLog {
+  id        String   @id @default(uuid())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
